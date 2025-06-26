@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "live-server": "^1.2.2"
+  },
+  "name": "html-snippets",
+  "version": "1.0.0",
+  "devDependencies": {},
+  "scripts": {
+    "dev": "live-server"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
