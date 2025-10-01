@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive demo showcasing screenshot capture capabilities with diverse UI elements">
+    <meta name="author" content="Demo Screenshots">
+    <title>Interactive Screenshot Demo</title>
+    
+    <!-- Performance optimization -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- CSS Dependencies (CDN) -->
+    <!-- Normalize.css 8.0.1 - CSS reset for cross-browser consistency -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" 
+          integrity="sha512-NhSC1YmyruXifcj/KFRWoC561YpHpc5Jtzgvbuzx5VozKpWvQ+4nXhPdFgmx8xqexRcpAglTj9sIBWINXa8x5w==" 
+          crossorigin="anonymous" referrerpolicy="no-referrer">
+    
+    <!-- Tailwind CSS 3.3.0 - Utility-first CSS framework -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    
+    <!-- JavaScript Dependencies (CDN) -->
+    <!-- html2canvas 1.4.1 - Client-side screenshot library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" 
+            integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" 
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <!-- Custom Styles - Material UI-inspired design (T014) -->
+    <style>
+        /* Material Design color palette */
+        :root {
+            --primary-blue: #1976d2;
+            --primary-dark: #1565c0;
+            --primary-light: #42a5f5;
+            --secondary-indigo: #3f51b5;
+            --grey-50: #fafafa;
+            --grey-100: #f5f5f5;
+            --grey-200: #eeeeee;
+            --grey-300: #e0e0e0;
+            --grey-700: #616161;
+            --grey-900: #212121;
+            --error-red: #d32f2f;
+            --success-green: #388e3c;
+        }
+        
+        /* Custom elevation shadows */
+        .elevation-1 { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
+        .elevation-2 { box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23); }
+        .elevation-3 { box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23); }
+        .elevation-4 { box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22); }
+        
+        /* Smooth transitions for all interactive elements */
+        .transition-all {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Hover effect for cards */
+        .hover-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-card:hover:not([data-hover-locked="true"]) {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15), 0 8px 8px rgba(0,0,0,0.18);
+        }
+        .hover-card[data-hover-locked="true"] {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15), 0 8px 8px rgba(0,0,0,0.18);
+        }
+        
+        /* Hover effect for buttons */
+        .btn-hover {
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .btn-hover:hover:not([data-hover-locked="true"]) {
+            transform: scale(1.02);
+        }
+        .btn-hover[data-hover-locked="true"] {
+            transform: scale(1.02);
+        }
+        
+        /* Link hover animation */
+        .hover-link {
+            position: relative;
+            text-decoration: none;
+        }
+        .hover-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--primary-blue);
+            transition: width 0.3s ease;
+        }
+        .hover-link:hover:not([data-hover-locked="true"])::after,
+        .hover-link[data-hover-locked="true"]::after {
+            width: 100%;
+        }
+        
+        /* Custom select dropdown */
+        .custom-select {
+            position: relative;
+            cursor: pointer;
+        }
+        .custom-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--grey-300);
+            border-radius: 4px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .custom-select-dropdown.open {
+            display: block;
+        }
+        .custom-select-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .custom-select-option:hover {
+            background-color: var(--grey-100);
+        }
+        
+        /* Modal styles */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-backdrop.show {
+            opacity: 1;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .modal-backdrop.show .modal-content {
+            transform: scale(1);
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 300px;
+            padding: 16px 24px;
+            border-radius: 4px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+        .toast.success {
+            background-color: var(--success-green);
+        }
+        .toast.error {
+            background-color: var(--error-red);
+        }
+        
+        /* Loading indicator */
+        .loading-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Error field styling */
+        .field-error {
+            border-color: var(--error-red) !important;
+        }
+        
+        /* Focus visible for accessibility */
+        *:focus-visible {
+            outline: 3px solid var(--primary-light);
+            outline-offset: 2px;
+        }
+    </style>
+
+</head>
+<body class="bg-gray-50 min-h-screen">
+    
+    <!-- Skip to main content link (accessibility) -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded">
+        Skip to main content
+    </a>
+    
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <h1 class="text-3xl font-bold text-gray-900">Interactive Screenshot Demo</h1>
+            <p class="mt-2 text-gray-600">Demonstrate screenshot capture with diverse UI elements, forms, and modals</p>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- Screenshot Capture Section -->
+        <section class="bg-white rounded-lg elevation-1 p-6">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Screenshot Capture</h2>
+            <p class="text-gray-600 mb-4">Click the button below to capture a screenshot of the entire page.</p>
+            
+            <div class="space-y-4">
+                <button 
+                    id="captureBtn" 
+                    class="btn-hover bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 disabled:opacity-50"
+                    onclick="captureScreenshot()"
+                    aria-label="Capture screenshot of current page">
+                    <span id="captureBtnText">Capture Screenshot</span>
+                    <span id="captureBtnLoading" class="loading-indicator ml-2" style="display: none;"></span>
+                </button>
+                
+                <!-- Screenshot Preview Container -->
+                <div id="screenshotPreview" data-testid="screenshot-preview" style="display: none;" class="mt-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Screenshot Preview</h3>
+                    <div class="border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <img id="screenshotImg" src="" alt="Screenshot preview" class="max-w-full h-auto rounded shadow-md" />
+                        <div id="screenshotMetadata" data-testid="screenshot-metadata" class="mt-3 text-sm text-gray-600 space-y-1">
+                            <p><strong>Format:</strong> <span id="metaFormat"></span></p>
+                            <p><strong>Size:</strong> <span id="metaSize"></span></p>
+                            <p><strong>Dimensions:</strong> <span id="metaDimensions"></span></p>
+                        </div>
+                    </div>
+                    <button 
+                        id="attachBtn" 
+                        class="mt-4 bg-green-600 text-white px-6 py-2 rounded-md font-medium hover:bg-green-700 focus:ring-4 focus:ring-green-300 disabled:opacity-50"
+                        onclick="attachScreenshotToForm()"
+                        disabled
+                        aria-label="Attach screenshot to feedback form">
+                        Attach to Feedback
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Form Elements Section (T015) -->
+        <section data-testid="demo-section-forms" class="bg-white rounded-lg elevation-1 p-6">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Form Elements</h2>
+            <p class="text-gray-600 mb-6">Various form inputs to demonstrate capture capabilities</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="demoTextInput" class="block text-sm font-medium text-gray-700 mb-2">Text Input</label>
+                    <input type="text" id="demoTextInput" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter text here" />
+                </div>
+                
+                <div>
+                    <label for="demoEmailInput" class="block text-sm font-medium text-gray-700 mb-2">Email Input</label>
+                    <input type="email" id="demoEmailInput" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="email@example.com" />
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label for="demoTextarea" class="block text-sm font-medium text-gray-700 mb-2">Textarea</label>
+                    <textarea id="demoTextarea" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter multiple lines of text"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Checkboxes</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="demoCheck1" class="rounded text-blue-600 focus:ring-blue-500" />
+                            <span class="ml-2 text-gray-700">Option 1</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="demoCheck2" class="rounded text-blue-600 focus:ring-blue-500" />
+                            <span class="ml-2 text-gray-700">Option 2</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="demoCheck3" class="rounded text-blue-600 focus:ring-blue-500" />
+                            <span class="ml-2 text-gray-700">Option 3</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Radio Buttons</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="demo-radio" id="demoRadio1" value="option1" class="text-blue-600 focus:ring-blue-500" />
+                            <span class="ml-2 text-gray-700">Option A</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="demo-radio" id="demoRadio2" value="option2" class="text-blue-600 focus:ring-blue-500" />
+                            <span class="ml-2 text-gray-700">Option B</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="demo-radio" id="demoRadio3" value="option3" class="text-blue-600 focus:ring-blue-500" />
+                            <span class="ml-2 text-gray-700">Option C</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Select Controls Section (T016) -->
+        <section data-testid="demo-section-selects" class="bg-white rounded-lg elevation-1 p-6">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Select Controls</h2>
+            <p class="text-gray-600 mb-6">Native and custom styled select dropdowns</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="nativeSelect" class="block text-sm font-medium text-gray-700 mb-2">Native Select</label>
+                    <select id="nativeSelect" data-testid="native-select" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Choose an option</option>
+                        <option value="option1">Option 1</option>
+                        <option value="option2">Option 2</option>
+                        <option value="option3">Option 3</option>
+                        <option value="option4">Option 4</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Custom Styled Select</label>
+                    <div 
+                        class="custom-select w-full px-4 py-2 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        data-testid="custom-select"
+                        tabindex="0"
+                        role="combobox"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        onclick="toggleCustomSelect()"
+                        onkeydown="handleCustomSelectKeydown(event)">
+                        <span id="customSelectValue">Choose an option</span>
+                        <div class="custom-select-dropdown" data-testid="custom-select-dropdown" role="listbox">
+                            <div class="custom-select-option" data-testid="custom-select-option" role="option" onclick="selectCustomOption(event, 'Custom Option 1')">Custom Option 1</div>
+                            <div class="custom-select-option" data-testid="custom-select-option" role="option" onclick="selectCustomOption(event, 'Custom Option 2')">Custom Option 2</div>
+                            <div class="custom-select-option" data-testid="custom-select-option" role="option" onclick="selectCustomOption(event, 'Custom Option 3')">Custom Option 3</div>
+                            <div class="custom-select-option" data-testid="custom-select-option" role="option" onclick="selectCustomOption(event, 'Custom Option 4')">Custom Option 4</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Interactive Elements Section (T017) -->
+        <section data-testid="demo-section-interactive" class="bg-white rounded-lg elevation-1 p-6">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Interactive Elements</h2>
+            <p class="text-gray-600 mb-6">Buttons, cards, and links with hover effects</p>
+            
+            <div class="space-y-6">
+                <!-- Buttons -->
+                <div data-testid="demo-section-buttons">
+                    <h3 class="text-lg font-medium text-gray-900 mb-3">Buttons</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <button class="btn-primary btn-hover px-4 py-2 bg-blue-600 text-white rounded-md font-medium" data-hoverable="true">Primary Button</button>
+                        <button class="btn-secondary btn-hover px-4 py-2 bg-gray-600 text-white rounded-md font-medium" data-hoverable="true">Secondary Button</button>
+                        <button class="btn-outline btn-hover px-4 py-2 border-2 border-blue-600 text-blue-600 rounded-md font-medium" data-hoverable="true">Outline Button</button>
+                        <button class="btn-hover px-4 py-2 bg-green-600 text-white rounded-md font-medium" data-hoverable="true">Success Button</button>
+                    </div>
+                    <div class="mt-2">
+                        <button onclick="toggleHover(0)" class="text-sm text-blue-600 hover:underline">Lock Hover</button>
+                    </div>
+                </div>
+                
+                <!-- Cards with Hover -->
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-3">Hoverable Cards</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div data-testid="card-1" class="hover-card elevation-1 p-4 rounded-lg bg-white" data-hoverable="true">
+                            <h4 class="font-semibold text-gray-900 mb-2">Card 1</h4>
+                            <p class="text-sm text-gray-600">This card has hover effects. Try hovering or locking the hover state.</p>
+                            <button onclick="toggleHover(1)" class="mt-2 text-sm text-blue-600 hover:underline">Lock Hover</button>
+                        </div>
+                        <div data-testid="card-2" class="hover-card elevation-1 p-4 rounded-lg bg-white" data-hoverable="true">
+                            <h4 class="font-semibold text-gray-900 mb-2">Card 2</h4>
+                            <p class="text-sm text-gray-600">Hover to see elevation change and upward translation.</p>
+                            <button onclick="toggleHover(2)" class="mt-2 text-sm text-blue-600 hover:underline">Lock Hover</button>
+                        </div>
+                        <div data-testid="card-3" class="hover-card elevation-1 p-4 rounded-lg bg-white" data-hoverable="true">
+                            <h4 class="font-semibold text-gray-900 mb-2">Card 3</h4>
+                            <p class="text-sm text-gray-600">Lock the hover state before capturing a screenshot.</p>
+                            <button onclick="toggleHover(3)" class="mt-2 text-sm text-blue-600 hover:underline">Lock Hover</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Links -->
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-3">Links with Animation</h3>
+                    <div class="space-x-4">
+                        <a href="#" class="hover-link text-blue-600 font-medium" data-hoverable="true">Link 1</a>
+                        <a href="#" class="hover-link text-blue-600 font-medium" data-hoverable="true">Link 2</a>
+                        <a href="#" class="hover-link text-blue-600 font-medium" data-hoverable="true">Link 3</a>
+                    </div>
+                    <button onclick="toggleHover(4)" class="mt-2 text-sm text-blue-600 hover:underline">Lock Hover</button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Visual Elements Section (T018) -->
+        <section class="bg-white rounded-lg elevation-1 p-6">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Visual Elements</h2>
+            <p class="text-gray-600 mb-6">Images and colored panels for diverse content</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <img src="https://picsum.photos/400/300?random=1" alt="Random image from Picsum Photos" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                </div>
+                <div>
+                    <img src="https://picsum.photos/400/300?random=2" alt="Random image from Picsum Photos" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                </div>
+                <div>
+                    <img src="https://picsum.photos/400/300?random=3" alt="Random image from Picsum Photos" class="w-full h-48 object-cover rounded-lg shadow-md" />
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div class="h-24 bg-blue-500 rounded-lg elevation-1"></div>
+                <div class="h-24 bg-green-500 rounded-lg elevation-1"></div>
+                <div class="h-24 bg-purple-500 rounded-lg elevation-1"></div>
+                <div class="h-24 bg-orange-500 rounded-lg elevation-1"></div>
+            </div>
+        </section>
+        
+        <!-- Modal Trigger -->
+        <section class="bg-white rounded-lg elevation-1 p-6">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Modal Window</h2>
+            <p class="text-gray-600 mb-4">Click to open a fullscreen modal that can be captured in screenshots</p>
+            <button 
+                onclick="openModal()" 
+                class="bg-indigo-600 text-white px-6 py-3 rounded-md font-medium hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300"
+                aria-label="Open modal dialog">
+                Open Modal
+            </button>
+        </section>
+        
+        <!-- Feedback Form Section (T021) -->
+        <section class="bg-white rounded-lg elevation-1 p-6">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Feedback Form</h2>
+            <p class="text-gray-600 mb-6">Submit feedback with optional screenshot attachment</p>
+            
+            <form id="feedbackForm" onsubmit="handleFormSubmit(event)" novalidate class="space-y-6">
+                <!-- Screenshot Preview in Form -->
+                <div id="formScreenshotPreview" data-testid="form-screenshot-preview" style="display: none;" class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-blue-900 mb-2">Screenshot Attached</p>
+                            <img id="formScreenshotImg" src="" alt="Attached screenshot" class="max-w-xs h-auto rounded shadow-sm" />
+                        </div>
+                        <button 
+                            type="button" 
+                            onclick="removeScreenshot()" 
+                            class="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                            aria-label="Remove attached screenshot">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Name Field -->
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                        Name <span class="text-red-600">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        required 
+                        aria-required="true"
+                        aria-describedby="error-name"
+                        minlength="2"
+                        maxlength="100"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        placeholder="John Doe"
+                        oninput="clearFieldError('name')" />
+                    <p id="error-name" data-testid="error-name" class="mt-1 text-sm text-red-600 hidden"></p>
+                </div>
+                
+                <!-- Email Field -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                        Email <span class="text-red-600">*</span>
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        required 
+                        aria-required="true"
+                        aria-describedby="error-email"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        placeholder="john.doe@example.com"
+                        oninput="clearFieldError('email')" />
+                    <p id="error-email" data-testid="error-email" class="mt-1 text-sm text-red-600 hidden"></p>
+                </div>
+                
+                <!-- Subject Field -->
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">
+                        Subject <span class="text-red-600">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="subject" 
+                        name="subject" 
+                        required 
+                        aria-required="true"
+                        aria-describedby="error-subject"
+                        minlength="5"
+                        maxlength="200"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        placeholder="Brief subject line"
+                        oninput="clearFieldError('subject')" />
+                    <p id="error-subject" data-testid="error-subject" class="mt-1 text-sm text-red-600 hidden"></p>
+                </div>
+                
+                <!-- Message Field -->
+                <div>
+                    <label for="message" class="block text-sm font-medium text-gray-700 mb-2">
+                        Message <span class="text-red-600">*</span>
+                    </label>
+                    <textarea 
+                        id="message" 
+                        name="message" 
+                        required 
+                        aria-required="true"
+                        aria-describedby="error-message message-char-count"
+                        minlength="10"
+                        maxlength="2000"
+                        rows="6"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        placeholder="Your detailed message here..."
+                        oninput="updateCharCount(); clearFieldError('message')"></textarea>
+                    <div class="flex justify-between items-center mt-1">
+                        <p id="error-message" data-testid="error-message" class="text-sm text-red-600 hidden"></p>
+                        <p id="message-char-count" data-testid="message-char-count" class="text-sm text-gray-500">0 / 2000</p>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div>
+                    <button 
+                        type="submit" 
+                        id="submitBtn"
+                        class="w-full bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Submit feedback form">
+                        Submit Feedback
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Success Message -->
+            <div id="successMessage" data-testid="success-message" role="status" aria-live="polite" class="mt-4 p-4 bg-green-50 border border-green-200 rounded-md text-green-800 hidden">
+                <p class="font-medium">✓ Feedback submitted successfully!</p>
+                <p class="text-sm mt-1">Check the browser console to see the logged data.</p>
+            </div>
+        </section>
+        
+    </main>
+    
+    <!-- Modal Dialog (T019) -->
+    <div id="modalBackdrop" data-testid="modal-backdrop" class="modal-backdrop" style="display: none;" aria-hidden="true">
+        <div 
+            id="modal" 
+            data-testid="modal" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="modalTitle"
+            class="modal-content elevation-4 p-8">
+            <div data-testid="modal-content">
+                <div class="flex justify-between items-start mb-4">
+                    <h2 id="modalTitle" class="text-2xl font-bold text-gray-900">Fullscreen Modal</h2>
+                    <button 
+                        id="modalCloseBtn"
+                        data-testid="modal-close"
+                        onclick="closeModal()" 
+                        class="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none"
+                        aria-label="Close modal">
+                        ×
+                    </button>
+                </div>
+                <div class="space-y-4 text-gray-700">
+                    <p>This is a fullscreen modal dialog that can be captured in screenshots along with the background page.</p>
+                    <p>Try these actions:</p>
+                    <ul class="list-disc list-inside space-y-2 ml-4">
+                        <li>Click the "Capture Screenshot" button while this modal is open</li>
+                        <li>Press the <kbd class="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-sm">Escape</kbd> key to close</li>
+                        <li>Click outside this dialog on the backdrop to close</li>
+                        <li>Use the × button to close</li>
+                    </ul>
+                    <p class="mt-4">The modal includes focus trapping for accessibility, ensuring keyboard navigation stays within the dialog while it's open.</p>
+                </div>
+                <div class="mt-6 flex gap-3">
+                    <button 
+                        onclick="captureScreenshot()" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Capture Screenshot
+                    </button>
+                    <button 
+                        onclick="closeModal()" 
+                        class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">
+                        Close Modal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification Container -->
+    <div id="toast" data-testid="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    
+    <!-- Loading Indicator (hidden) -->
+    <div id="loadingIndicator" data-testid="loading-indicator" style="display: none;"></div>
+    
+    <!-- Error Message Container (hidden) -->
+    <div id="errorMessage" data-testid="error-message" role="alert" aria-live="assertive" class="fixed top-20 right-20 max-w-md p-4 bg-red-50 border border-red-200 rounded-md text-red-800 hidden"></div>
+    
+    <!-- Application JavaScript (T020, T022, T023+) -->
+    <script>
+        // Global application state
+        window.appState = {
+            currentScreenshot: null,
+            hoverLocks: []
+        };
+        
+        // ========================================
+        // MODAL FUNCTIONS (T020)
+        // ========================================
+        
+        /**
+         * Opens the modal dialog with focus management
+         * Implements focus trap and body scroll lock
+         */
+        function openModal() {
+            const backdrop = document.getElementById('modalBackdrop');
+            const modal = document.getElementById('modal');
+            const closeBtn = document.getElementById('modalCloseBtn');
+            
+            // Store the element that opened the modal for focus return
+            window.modalTrigger = document.activeElement;
+            
+            // Show modal with animation
+            backdrop.style.display = 'flex';
+            backdrop.setAttribute('aria-hidden', 'false');
+            setTimeout(() => backdrop.classList.add('show'), 10);
+            
+            // Lock body scroll
+            document.body.style.overflow = 'hidden';
+            
+            // Focus first focusable element in modal
+            setTimeout(() => closeBtn.focus(), 100);
+            
+            // Set up keyboard event listeners
+            document.addEventListener('keydown', handleModalKeydown);
+        }
+        
+        /**
+         * Closes the modal dialog and restores focus
+         */
+        function closeModal() {
+            const backdrop = document.getElementById('modalBackdrop');
+            
+            // Hide modal with animation
+            backdrop.classList.remove('show');
+            setTimeout(() => {
+                backdrop.style.display = 'none';
+                backdrop.setAttribute('aria-hidden', 'true');
+            }, 300);
+            
+            // Unlock body scroll
+            document.body.style.overflow = '';
+            
+            // Return focus to trigger element
+            if (window.modalTrigger) {
+                window.modalTrigger.focus();
+                window.modalTrigger = null;
+            }
+            
+            // Remove keyboard event listeners
+            document.removeEventListener('keydown', handleModalKeydown);
+        }
+        
+        /**
+         * Handles keyboard events for modal (Escape key, focus trap)
+         */
+        function handleModalKeydown(event) {
+            // Close on Escape
+            if (event.key === 'Escape') {
+                closeModal();
+                return;
+            }
+            
+            // Focus trap implementation
+            if (event.key === 'Tab') {
+                const modal = document.getElementById('modal');
+                const focusableElements = modal.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+                
+                if (event.shiftKey && document.activeElement === firstElement) {
+                    event.preventDefault();
+                    lastElement.focus();
+                } else if (!event.shiftKey && document.activeElement === lastElement) {
+                    event.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        }
+        
+        // Close modal on backdrop click
+        document.addEventListener('DOMContentLoaded', () => {
+            const backdrop = document.getElementById('modalBackdrop');
+            backdrop.addEventListener('click', (event) => {
+                if (event.target === backdrop) {
+                    closeModal();
+                }
+            });
+        });
+        
+        // ========================================
+        // CUSTOM SELECT FUNCTIONS
+        // ========================================
+        
+        /**
+         * Toggles the custom select dropdown open/closed
+         */
+        function toggleCustomSelect() {
+            const select = document.querySelector('.custom-select');
+            const dropdown = select.querySelector('.custom-select-dropdown');
+            const isOpen = dropdown.classList.contains('open');
+            
+            if (isOpen) {
+                dropdown.classList.remove('open');
+                select.setAttribute('aria-expanded', 'false');
+            } else {
+                dropdown.classList.add('open');
+                select.setAttribute('aria-expanded', 'true');
+            }
+        }
+        
+        /**
+         * Selects an option from the custom select dropdown
+         */
+        function selectCustomOption(event, value) {
+            event.stopPropagation();
+            document.getElementById('customSelectValue').textContent = value;
+            const dropdown = document.querySelector('.custom-select-dropdown');
+            dropdown.classList.remove('open');
+            document.querySelector('.custom-select').setAttribute('aria-expanded', 'false');
+        }
+        
+        /**
+         * Handles keyboard navigation for custom select
+         */
+        function handleCustomSelectKeydown(event) {
+            const select = event.currentTarget;
+            const dropdown = select.querySelector('.custom-select-dropdown');
+            const isOpen = dropdown.classList.contains('open');
+            
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleCustomSelect();
+            } else if (event.key === 'Escape' && isOpen) {
+                dropdown.classList.remove('open');
+                select.setAttribute('aria-expanded', 'false');
+            } else if (event.key === 'ArrowDown' && isOpen) {
+                event.preventDefault();
+                const firstOption = dropdown.querySelector('.custom-select-option');
+                if (firstOption) firstOption.focus();
+            }
+        }
+        
+        // Close custom select when clicking outside
+        document.addEventListener('click', (event) => {
+            const select = document.querySelector('.custom-select');
+            if (select && !select.contains(event.target)) {
+                const dropdown = select.querySelector('.custom-select-dropdown');
+                dropdown.classList.remove('open');
+                select.setAttribute('aria-expanded', 'false');
+            }
+        });
+        
+        // ========================================
+        // HOVER LOCK FUNCTIONS (T017)
+        // ========================================
+        
+        /**
+         * Toggles hover state lock for hoverable elements
+         * @param {number} index - Index of hover lock button
+         */
+        function toggleHover(index) {
+            const buttons = document.querySelectorAll('button[onclick^="toggleHover"]');
+            const button = buttons[index];
+            const section = button.closest('div[data-testid], section, div');
+            const hoverableElements = section.querySelectorAll('[data-hoverable="true"]');
+            
+            hoverableElements.forEach(element => {
+                const isLocked = element.getAttribute('data-hover-locked') === 'true';
+                
+                if (isLocked) {
+                    element.setAttribute('data-hover-locked', 'false');
+                    button.textContent = 'Lock Hover';
+                } else {
+                    element.setAttribute('data-hover-locked', 'true');
+                    button.textContent = 'Unlock Hover';
+                }
+            });
+        }
+        
+        // ========================================
+        // FORM VALIDATION FUNCTIONS (T022)
+        // ========================================
+        
+        /**
+         * Validates a single form field
+         * @param {string} fieldName - Name of the field to validate
+         * @returns {Object} Validation result with isValid and error message
+         */
+        function validateField(fieldName) {
+            const field = document.getElementById(fieldName);
+            const value = field.value.trim();
+            
+            // Name validation
+            if (fieldName === 'name') {
+                if (!value) {
+                    return { isValid: false, error: 'Name is required' };
+                }
+                if (value.length < 2) {
+                    return { isValid: false, error: 'Name must be at least 2 characters long' };
+                }
+                if (value.length > 100) {
+                    return { isValid: false, error: 'Name must be maximum 100 characters long' };
+                }
+                if (!/^[a-zA-Z\s]+$/.test(value)) {
+                    return { isValid: false, error: 'Name can only contain letters and spaces' };
+                }
+            }
+            
+            // Email validation
+            if (fieldName === 'email') {
+                if (!value) {
+                    return { isValid: false, error: 'Email is required' };
+                }
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    return { isValid: false, error: 'Please enter a valid email address' };
+                }
+            }
+            
+            // Subject validation
+            if (fieldName === 'subject') {
+                if (!value) {
+                    return { isValid: false, error: 'Subject is required' };
+                }
+                if (value.length < 5) {
+                    return { isValid: false, error: 'Subject must be at least 5 characters long' };
+                }
+                if (value.length > 200) {
+                    return { isValid: false, error: 'Subject must be maximum 200 characters long' };
+                }
+            }
+            
+            // Message validation
+            if (fieldName === 'message') {
+                if (!value) {
+                    return { isValid: false, error: 'Message is required' };
+                }
+                if (value.length < 10) {
+                    return { isValid: false, error: 'Message must be at least 10 characters long' };
+                }
+                if (value.length > 2000) {
+                    return { isValid: false, error: 'Message must be maximum 2000 characters long' };
+                }
+            }
+            
+            return { isValid: true };
+        }
+        
+        /**
+         * Validates the entire form
+         * @returns {boolean} True if form is valid
+         */
+        function validateForm() {
+            const fields = ['name', 'email', 'subject', 'message'];
+            let isValid = true;
+            let firstErrorField = null;
+            
+            fields.forEach(fieldName => {
+                const result = validateField(fieldName);
+                if (!result.isValid) {
+                    showFieldError(fieldName, result.error);
+                    isValid = false;
+                    if (!firstErrorField) {
+                        firstErrorField = fieldName;
+                    }
+                }
+            });
+            
+            // Focus first error field
+            if (firstErrorField) {
+                document.getElementById(firstErrorField).focus();
+            }
+            
+            return isValid;
+        }
+        
+        /**
+         * Displays an error message for a form field
+         * @param {string} fieldName - Name of the field
+         * @param {string} errorMessage - Error message to display
+         */
+        function showFieldError(fieldName, errorMessage) {
+            const field = document.getElementById(fieldName);
+            const errorElement = document.getElementById(`error-${fieldName}`);
+            
+            // Add error styling
+            field.classList.add('field-error', 'border-red-500');
+            field.setAttribute('aria-invalid', 'true');
+            
+            // Show error message
+            errorElement.textContent = errorMessage;
+            errorElement.classList.remove('hidden');
+        }
+        
+        /**
+         * Clears error display for a form field
+         * @param {string} fieldName - Name of the field
+         */
+        function clearFieldError(fieldName) {
+            const field = document.getElementById(fieldName);
+            const errorElement = document.getElementById(`error-${fieldName}`);
+            
+            // Remove error styling
+            field.classList.remove('field-error', 'border-red-500');
+            field.setAttribute('aria-invalid', 'false');
+            
+            // Hide error message
+            errorElement.textContent = '';
+            errorElement.classList.add('hidden');
+        }
+        
+        /**
+         * Updates the character count for the message textarea
+         */
+        function updateCharCount() {
+            const textarea = document.getElementById('message');
+            const counter = document.getElementById('message-char-count');
+            const currentLength = textarea.value.length;
+            counter.textContent = `${currentLength} / 2000`;
+        }
+        
+        /**
+         * Handles form submission
+         * @param {Event} event - Submit event
+         */
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            // Validate form
+            if (!validateForm()) {
+                return;
+            }
+            
+            // Disable submit button
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            
+            // Collect form data
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                subject: document.getElementById('subject').value.trim(),
+                message: document.getElementById('message').value.trim(),
+                screenshot: window.appState.currentScreenshot
+            };
+            
+            // Log to console (as per specification)
+            console.log('═══════════════════════════════════════');
+            console.log('FEEDBACK SUBMISSION');
+            console.log('═══════════════════════════════════════');
+            console.log('Timestamp:', new Date().toISOString());
+            console.log('---');
+            console.log('Name:', formData.name);
+            console.log('Email:', formData.email);
+            console.log('Subject:', formData.subject);
+            console.log('Message:', formData.message);
+            console.log('---');
+            console.log('Has Screenshot:', !!formData.screenshot);
+            if (formData.screenshot) {
+                console.log('Screenshot Format:', formData.screenshot.format);
+                console.log('Screenshot Size:', `${(formData.screenshot.fileSize / 1024).toFixed(2)} KB`);
+                console.log('Screenshot Dimensions:', `${formData.screenshot.width}x${formData.screenshot.height}`);
+                console.log('Screenshot ID:', formData.screenshot.id);
+                console.log('Captured At:', formData.screenshot.capturedAt);
+                console.log('---');
+                console.log('Screenshot Data URL (first 100 chars):', formData.screenshot.dataURL.substring(0, 100) + '...');
+            }
+            console.log('---');
+            console.log('User Agent:', navigator.userAgent);
+            console.log('Screen Resolution:', `${window.screen.width}x${window.screen.height}`);
+            console.log('═══════════════════════════════════════');
+            
+            // Show success message
+            const successMsg = document.getElementById('successMessage');
+            successMsg.classList.remove('hidden');
+            
+            // Show toast notification
+            showToast('Feedback submitted successfully!', 'success');
+            
+            // Reset form after 2 seconds
+            setTimeout(() => {
+                document.getElementById('feedbackForm').reset();
+                updateCharCount();
+                removeScreenshot();
+                successMsg.classList.add('hidden');
+                submitBtn.disabled = false;
+            }, 2000);
+        }
+        
+        // ========================================
+        // SCREENSHOT CAPTURE FUNCTIONS (T023)
+        // ========================================
+        
+        /**
+         * Captures screenshot of the current page
+         * Uses html2canvas library for client-side capture
+         */
+        async function captureScreenshot() {
+            const captureBtn = document.getElementById('captureBtn');
+            const btnText = document.getElementById('captureBtnText');
+            const btnLoading = document.getElementById('captureBtnLoading');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            try {
+                // Show loading state
+                captureBtn.disabled = true;
+                btnLoading.style.display = 'inline-block';
+                loadingIndicator.style.display = 'block';
+                
+                // Capture using html2canvas
+                const canvas = await html2canvas(document.body, {
+                    allowTaint: true,
+                    useCORS: true,
+                    scale: 1,
+                    logging: false
+                });
+                
+                // Convert canvas to blob (JPEG format, 0.8 quality)
+                const blob = await new Promise(resolve => {
+                    canvas.toBlob(resolve, 'image/jpeg', 0.8);
+                });
+                
+                // Check file size (max 5MB)
+                if (blob.size > 5242880) {
+                    throw new Error('Screenshot file size exceeds 5MB limit');
+                }
+                
+                // Create dataURL for preview
+                const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Create screenshot object matching data model
+                const screenshot = {
+                    id: Date.now().toString(),
+                    dataURL: dataURL,
+                    blob: blob,
+                    format: 'image/jpeg',
+                    width: canvas.width,
+                    height: canvas.height,
+                    fileSize: blob.size,
+                    capturedAt: new Date(),
+                    captureTarget: 'body'
+                };
+                
+                // Store in app state
+                window.appState.currentScreenshot = screenshot;
+                
+                // Display preview
+                displayScreenshotPreview(screenshot);
+                
+                // Show success toast
+                showToast('Screenshot captured successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Screenshot capture failed:', error);
+                showToast('Failed to capture screenshot: ' + error.message, 'error');
+                showError('Screenshot capture failed. Please try again.');
+            } finally {
+                // Hide loading state
+                captureBtn.disabled = false;
+                btnLoading.style.display = 'none';
+                loadingIndicator.style.display = 'none';
+            }
+        }
+        
+        /**
+         * Displays the screenshot preview
+         * @param {Object} screenshot - Screenshot object
+         */
+        function displayScreenshotPreview(screenshot) {
+            const preview = document.getElementById('screenshotPreview');
+            const img = document.getElementById('screenshotImg');
+            const attachBtn = document.getElementById('attachBtn');
+            
+            // Set image source
+            img.src = screenshot.dataURL;
+            
+            // Update metadata
+            document.getElementById('metaFormat').textContent = screenshot.format;
+            document.getElementById('metaSize').textContent = `${(screenshot.fileSize / 1024).toFixed(2)} KB`;
+            document.getElementById('metaDimensions').textContent = `${screenshot.width}x${screenshot.height}`;
+            
+            // Show preview
+            preview.style.display = 'block';
+            
+            // Enable attach button
+            attachBtn.disabled = false;
+        }
+        
+        /**
+         * Attaches the current screenshot to the feedback form
+         */
+        function attachScreenshotToForm() {
+            if (!window.appState.currentScreenshot) {
+                return;
+            }
+            
+            const formPreview = document.getElementById('formScreenshotPreview');
+            const formImg = document.getElementById('formScreenshotImg');
+            
+            // Set image in form
+            formImg.src = window.appState.currentScreenshot.dataURL;
+            
+            // Show preview in form
+            formPreview.style.display = 'block';
+            
+            // Scroll to form
+            document.getElementById('feedbackForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            showToast('Screenshot attached to feedback form', 'success');
+        }
+        
+        /**
+         * Removes the screenshot from the feedback form
+         */
+        function removeScreenshot() {
+            const formPreview = document.getElementById('formScreenshotPreview');
+            formPreview.style.display = 'none';
+            
+            // Note: We don't clear window.appState.currentScreenshot here
+            // so it can still be captured if user changes mind
+        }
+        
+        // ========================================
+        // TOAST NOTIFICATION FUNCTIONS
+        // ========================================
+        
+        /**
+         * Shows a toast notification
+         * @param {string} message - Message to display
+         * @param {string} type - Type of toast ('success' or 'error')
+         */
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        /**
+         * Shows an error message
+         * @param {string} message - Error message to display
+         */
+        function showError(message) {
+            const errorMsg = document.getElementById('errorMessage');
+            errorMsg.textContent = message;
+            errorMsg.classList.remove('hidden');
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                errorMsg.classList.add('hidden');
+            }, 5000);
+        }
+        
+        // ========================================
+        // INITIALIZATION
+        // ========================================
+        
+        // Initialize character counter on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCharCount();
+        });
+    </script>
+    
+</body>
+</html>
