@@ -211,6 +211,42 @@
             outline: 3px solid var(--primary-light);
             outline-offset: 2px;
         }
+        
+        /* Floating Action Button (FAB) for screenshot capture */
+        .fab-capture {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-dark));
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .fab-capture:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 3px 6px rgba(0,0,0,0.25);
+        }
+        .fab-capture:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+        .fab-capture:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .fab-capture svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
     </style>
 
 </head>
@@ -235,18 +271,9 @@
         <!-- Screenshot Capture Section -->
         <section class="bg-white rounded-lg elevation-1 p-6">
             <h2 class="text-2xl font-semibold text-gray-900 mb-4">Screenshot Capture</h2>
-            <p class="text-gray-600 mb-4">Click the button below to capture a screenshot of the entire page.</p>
+            <p class="text-gray-600 mb-4">Click the floating button in the bottom-right corner to capture a screenshot of the entire page.</p>
             
             <div class="space-y-4">
-                <button 
-                    id="captureBtn" 
-                    class="btn-hover bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 disabled:opacity-50"
-                    onclick="captureScreenshot()"
-                    aria-label="Capture screenshot of current page">
-                    <span id="captureBtnText">Capture Screenshot</span>
-                    <span id="captureBtnLoading" class="loading-indicator ml-2" style="display: none;"></span>
-                </button>
-                
                 <!-- Screenshot Preview Container -->
                 <div id="screenshotPreview" data-testid="screenshot-preview" style="display: none;" class="mt-4">
                     <h3 class="text-lg font-medium text-gray-900 mb-2">Screenshot Preview</h3>
@@ -633,6 +660,19 @@
             </div>
         </div>
     </div>
+    
+    <!-- Floating Action Button for Screenshot Capture -->
+    <button 
+        id="captureBtn" 
+        class="fab-capture"
+        onclick="captureScreenshot()"
+        aria-label="Capture screenshot of current page"
+        title="Capture Screenshot">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+        </svg>
+        <span id="captureBtnLoading" class="loading-indicator" style="display: none; position: absolute;"></span>
+    </button>
     
     <!-- Toast Notification Container -->
     <div id="toast" data-testid="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -1057,7 +1097,6 @@
          */
         async function captureScreenshot() {
             const captureBtn = document.getElementById('captureBtn');
-            const btnText = document.getElementById('captureBtnText');
             const btnLoading = document.getElementById('captureBtnLoading');
             const loadingIndicator = document.getElementById('loadingIndicator');
             
