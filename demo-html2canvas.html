@@ -247,6 +247,67 @@
             height: 28px;
             fill: white;
         }
+        
+        /* Second FAB for area selection - positioned above the first one */
+        .fab-area {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary-indigo), #283593);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .fab-area:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 3px 6px rgba(0,0,0,0.25);
+        }
+        .fab-area:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+        .fab-area:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .fab-area svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+        
+        /* Area selection overlay */
+        .selection-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 9998;
+            cursor: crosshair;
+            display: none;
+        }
+        .selection-overlay.active {
+            display: block;
+        }
+        
+        /* Selection box */
+        .selection-box {
+            position: absolute;
+            border: 2px dashed var(--primary-light);
+            background: rgba(66, 165, 245, 0.1);
+            pointer-events: none;
+        }
+        
     </style>
 
 </head>
@@ -661,18 +722,37 @@
         </div>
     </div>
     
-    <!-- Floating Action Button for Screenshot Capture -->
+    <!-- Floating Action Buttons for Screenshot Capture -->
+    
+    <!-- Area Selection Button -->
+    <button 
+        id="areaBtn" 
+        class="fab-area"
+        onclick="startAreaSelection()"
+        aria-label="Select area for screenshot"
+        title="Select Area">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M18 4v3h3v2h-3v3h-2V9h-3V7h3V4h2zM8 9H6v6h6v-2H8V9zm10 8v-3h2v3c0 1.1-.9 2-2 2h-3v-2h3zM8 17v2H5c-1.1 0-2-.9-2-2v-3h2v3h3z"/>
+        </svg>
+    </button>
+    
+    <!-- Full Page Capture Button -->
     <button 
         id="captureBtn" 
         class="fab-capture"
         onclick="captureScreenshot()"
         aria-label="Capture screenshot of current page"
-        title="Capture Screenshot">
+        title="Capture Full Page">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
         </svg>
         <span id="captureBtnLoading" class="loading-indicator" style="display: none; position: absolute;"></span>
     </button>
+    
+    <!-- Area Selection Overlay -->
+    <div id="selectionOverlay" class="selection-overlay">
+        <div id="selectionBox" class="selection-box" style="display: none;"></div>
+    </div>
     
     <!-- Toast Notification Container -->
     <div id="toast" data-testid="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -688,8 +768,238 @@
         // Global application state
         window.appState = {
             currentScreenshot: null,
-            hoverLocks: []
+            hoverLocks: [],
+            isSelectingArea: false,
+            selectionStart: null,
+            selectionEnd: null
         };
+        
+        // ========================================
+        // AREA SELECTION FUNCTIONS
+        // ========================================
+        
+        /**
+         * Starts the area selection mode
+         */
+        function startAreaSelection() {
+            const overlay = document.getElementById('selectionOverlay');
+            const selectionBox = document.getElementById('selectionBox');
+            
+            // Reset state
+            window.appState.isSelectingArea = true;
+            window.appState.selectionStart = null;
+            window.appState.selectionEnd = null;
+            selectionBox.style.display = 'none';
+            
+            // Show overlay
+            overlay.classList.add('active');
+            
+            // Add event listeners
+            overlay.addEventListener('mousedown', handleSelectionStart);
+            overlay.addEventListener('mousemove', handleSelectionMove);
+            overlay.addEventListener('mouseup', handleSelectionEnd);
+            document.addEventListener('keydown', handleSelectionEscape);
+        }
+        
+        /**
+         * Handles the start of area selection
+         */
+        function handleSelectionStart(event) {
+            if (!window.appState.isSelectingArea) return;
+            
+            const selectionBox = document.getElementById('selectionBox');
+            
+            // Record start position
+            window.appState.selectionStart = {
+                x: event.clientX,
+                y: event.clientY
+            };
+            
+            // Show selection box
+            selectionBox.style.display = 'block';
+            selectionBox.style.left = event.clientX + 'px';
+            selectionBox.style.top = event.clientY + 'px';
+            selectionBox.style.width = '0px';
+            selectionBox.style.height = '0px';
+        }
+        
+        /**
+         * Handles mouse movement during area selection
+         */
+        function handleSelectionMove(event) {
+            if (!window.appState.isSelectingArea || !window.appState.selectionStart) return;
+            
+            const selectionBox = document.getElementById('selectionBox');
+            const start = window.appState.selectionStart;
+            
+            // Calculate selection box dimensions
+            const currentX = event.clientX;
+            const currentY = event.clientY;
+            
+            const left = Math.min(start.x, currentX);
+            const top = Math.min(start.y, currentY);
+            const width = Math.abs(currentX - start.x);
+            const height = Math.abs(currentY - start.y);
+            
+            // Update selection box
+            selectionBox.style.left = left + 'px';
+            selectionBox.style.top = top + 'px';
+            selectionBox.style.width = width + 'px';
+            selectionBox.style.height = height + 'px';
+        }
+        
+        /**
+         * Handles the end of area selection and captures the selected area
+         */
+        async function handleSelectionEnd(event) {
+            if (!window.appState.isSelectingArea || !window.appState.selectionStart) return;
+            
+            const start = window.appState.selectionStart;
+            const end = {
+                x: event.clientX,
+                y: event.clientY
+            };
+            
+            // Calculate selection area
+            const left = Math.min(start.x, end.x);
+            const top = Math.min(start.y, end.y);
+            const width = Math.abs(end.x - start.x);
+            const height = Math.abs(end.y - start.y);
+            
+            // Check if area is valid (minimum 10x10 pixels)
+            if (width < 10 || height < 10) {
+                cancelAreaSelection();
+                showToast('Selection too small. Please select a larger area.', 'error');
+                return;
+            }
+            
+            // Hide overlay
+            cancelAreaSelection();
+            
+            // Capture the selected area
+            await captureSelectedArea(left, top, width, height);
+        }
+        
+        /**
+         * Handles Escape key to cancel area selection
+         */
+        function handleSelectionEscape(event) {
+            if (event.key === 'Escape' && window.appState.isSelectingArea) {
+                cancelAreaSelection();
+                showToast('Area selection cancelled', 'error');
+            }
+        }
+        
+        /**
+         * Cancels area selection and cleans up
+         */
+        function cancelAreaSelection() {
+            const overlay = document.getElementById('selectionOverlay');
+            const selectionBox = document.getElementById('selectionBox');
+            
+            // Hide overlay
+            overlay.classList.remove('active');
+            selectionBox.style.display = 'none';
+            
+            // Reset state
+            window.appState.isSelectingArea = false;
+            window.appState.selectionStart = null;
+            window.appState.selectionEnd = null;
+            
+            // Remove event listeners
+            overlay.removeEventListener('mousedown', handleSelectionStart);
+            overlay.removeEventListener('mousemove', handleSelectionMove);
+            overlay.removeEventListener('mouseup', handleSelectionEnd);
+            document.removeEventListener('keydown', handleSelectionEscape);
+        }
+        
+        /**
+         * Captures screenshot of selected area
+         * @param {number} x - X coordinate of selection
+         * @param {number} y - Y coordinate of selection
+         * @param {number} width - Width of selection
+         * @param {number} height - Height of selection
+         */
+        async function captureSelectedArea(x, y, width, height) {
+            const captureBtn = document.getElementById('captureBtn');
+            const areaBtn = document.getElementById('areaBtn');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            try {
+                // Show loading state
+                captureBtn.disabled = true;
+                areaBtn.disabled = true;
+                loadingIndicator.style.display = 'block';
+                showToast('Capturing selected area...', 'success');
+                
+                // Get scroll position
+                const scrollX = window.scrollX || window.pageXOffset;
+                const scrollY = window.scrollY || window.pageYOffset;
+                
+                // Adjust coordinates for scroll
+                const adjustedX = x + scrollX;
+                const adjustedY = y + scrollY;
+                
+                // Capture entire page first
+                const canvas = await html2canvas(document.body, {
+                    allowTaint: true,
+                    useCORS: true,
+                    scale: 1,
+                    logging: false,
+                    x: adjustedX,
+                    y: adjustedY,
+                    width: width,
+                    height: height,
+                    scrollX: 0,
+                    scrollY: 0
+                });
+                
+                // Convert canvas to blob (JPEG format, 0.8 quality)
+                const blob = await new Promise(resolve => {
+                    canvas.toBlob(resolve, 'image/jpeg', 0.8);
+                });
+                
+                // Check file size (max 5MB)
+                if (blob.size > 5242880) {
+                    throw new Error('Screenshot file size exceeds 5MB limit');
+                }
+                
+                // Create dataURL for preview
+                const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Create screenshot object matching data model
+                const screenshot = {
+                    id: Date.now().toString(),
+                    dataURL: dataURL,
+                    blob: blob,
+                    format: 'image/jpeg',
+                    width: canvas.width,
+                    height: canvas.height,
+                    fileSize: blob.size,
+                    capturedAt: new Date(),
+                    captureTarget: `area(${Math.round(adjustedX)},${Math.round(adjustedY)},${width}x${height})`
+                };
+                
+                // Store in app state
+                window.appState.currentScreenshot = screenshot;
+                
+                // Display preview
+                displayScreenshotPreview(screenshot);
+                
+                // Show success toast
+                showToast('Selected area captured successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Area screenshot capture failed:', error);
+                showToast('Failed to capture selected area: ' + error.message, 'error');
+                showError('Area screenshot capture failed. Please try again.');
+            } finally {
+                // Hide loading state
+                captureBtn.disabled = false;
+                areaBtn.disabled = false;
+                loadingIndicator.style.display = 'none';
+            }
+        }
         
         // ========================================
         // MODAL FUNCTIONS (T020)

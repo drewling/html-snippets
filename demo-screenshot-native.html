@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Screenshot Feedback Demo</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
+    integrity="sha512-oHDEc8Xed4Z9s+vC8n5IZV1HKjYAGPZLP24VzjrCBOiZx1HiNFa0bI1HpvnDnNQO7+6J5X5dC5uZ3+Zr3OY5cA=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#E3F2FD',
+              100: '#BBDEFB',
+              200: '#90CAF9',
+              300: '#64B5F6',
+              400: '#42A5F5',
+              500: '#2196F3',
+              600: '#1E88E5',
+              700: '#1976D2',
+              800: '#1565C0',
+              900: '#0D47A1'
+            },
+            secondary: {
+              50: '#F3E5F5',
+              100: '#E1BEE7',
+              200: '#CE93D8',
+              300: '#BA68C8',
+              400: '#AB47BC',
+              500: '#9C27B0',
+              600: '#8E24AA',
+              700: '#7B1FA2',
+              800: '#6A1B9A',
+              900: '#4A148C'
+            },
+            surface: {
+              DEFAULT: '#FFFFFF',
+              dark: '#121212'
+            }
+          },
+          boxShadow: {
+            'elevation-1': '0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.14)',
+            'elevation-2': '0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)'
+          },
+          fontFamily: {
+            sans: ['"Roboto"', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+    @layer base {
+      body {
+        @apply bg-surface text-slate-900 antialiased;
+      }
+
+      h1,
+      h2,
+      h3 {
+        @apply font-medium text-slate-900;
+      }
+
+      a {
+        @apply text-primary-600 hover:text-primary-700;
+      }
+    }
+
+    @layer components {
+      .card {
+        @apply bg-surface rounded-xl shadow-elevation-1 p-6;
+      }
+
+      .fab {
+        @apply fixed bottom-6 right-6 flex items-center gap-2 rounded-full bg-primary-600 px-5 py-3 text-white shadow-elevation-2 transition hover:bg-primary-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-200;
+      }
+
+      .modal-backdrop {
+        @apply fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center;
+      }
+
+      .modal-panel {
+        @apply card max-w-3xl w-full;
+      }
+
+      .badge {
+        @apply inline-flex items-center gap-1 rounded-full bg-primary-50 px-3 py-1 text-sm font-medium text-primary-700;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+  <div class="min-h-screen pb-28">
+    <header class="sticky top-0 z-20 bg-surface shadow-elevation-1">
+      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-5">
+        <div class="space-y-1">
+          <h1 class="text-2xl font-semibold">Screenshot feedback demo</h1>
+          <p class="text-sm text-slate-600">
+            Capture Chrome tab visuals and attach them to feedback without leaving the page.
+          </p>
+        </div>
+        <span class="badge" data-testid="attachment-count" aria-live="polite">0 attachments</span>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl space-y-8 px-6 py-10">
+      <section class="card space-y-4" aria-labelledby="overview-title">
+        <div class="flex items-center justify-between">
+          <h2 id="overview-title" class="text-lg font-semibold">Overview</h2>
+          <span class="badge">Chrome only</span>
+        </div>
+        <p class="text-sm text-slate-600">
+          This interactive page demonstrates two capture modes powered by <code>mediaDevices.getDisplayMedia</code>
+          and shows how captured screenshots appear inside a feedback form for validation and sharing.
+        </p>
+        <ul class="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+          <li class="flex gap-3">
+            <span class="badge">1</span>
+            <span>Launch the floating action button to begin a capture session.</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="badge">2</span>
+            <span>Pick full-page or region mode to collect the screenshot you need.</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="badge">3</span>
+            <span>Review the preview, metadata, and remove or download as needed.</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="badge">4</span>
+            <span>Submit feedback to log a structured payload directly in the console.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="grid gap-6 md:grid-cols-2">
+        <article class="card space-y-4" aria-labelledby="preview-title">
+          <div class="flex items-center justify-between gap-4">
+            <h2 id="preview-title" class="text-lg font-semibold">Screenshot preview</h2>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:border-primary-500 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
+                data-testid="remove-screenshot"
+                disabled
+              >Remove</button>
+              <button
+                type="button"
+                class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:border-primary-500 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
+                data-testid="download-screenshot"
+                disabled
+              >Download</button>
+            </div>
+          </div>
+          <div
+            class="relative flex aspect-video items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-white"
+            data-testid="screenshot-preview"
+          >
+            <p class="text-sm text-slate-500" data-testid="screenshot-placeholder">No screenshot yet. Capture to populate the preview.</p>
+            <img
+              alt="Captured screenshot"
+              data-testid="screenshot-image"
+              class="hidden h-full w-full object-contain"
+            />
+          </div>
+          <p data-testid="screenshot-metadata" class="text-sm text-slate-600">Mode: — · Size: — · States: none</p>
+          <div
+            data-testid="capture-error"
+            class="hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+            aria-live="assertive"
+          ></div>
+        </article>
+
+        <article class="card space-y-6" aria-labelledby="feedback-title">
+          <div class="flex items-center justify-between">
+            <h2 id="feedback-title" class="text-lg font-semibold">Feedback form</h2>
+            <span class="badge">Console logging</span>
+          </div>
+          <form class="space-y-4" data-testid="feedback-form" novalidate>
+            <label class="block space-y-1">
+              <span class="text-sm font-medium text-slate-700">Name</span>
+              <input
+                data-testid="field-name"
+                name="name"
+                type="text"
+                required
+                class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-200"
+                placeholder="Jane Reviewer"
+              />
+            </label>
+            <label class="block space-y-1">
+              <span class="text-sm font-medium text-slate-700">Email</span>
+              <input
+                data-testid="field-email"
+                name="email"
+                type="email"
+                required
+                class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-200"
+                placeholder="jane@example.com"
+              />
+            </label>
+            <label class="block space-y-1">
+              <span class="text-sm font-medium text-slate-700">Feedback details</span>
+              <textarea
+                data-testid="field-message"
+                name="message"
+                required
+                rows="4"
+                class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-200"
+                placeholder="Describe what you saw when capturing the hover tooltip."
+              ></textarea>
+            </label>
+            <div class="flex items-center justify-between text-xs text-slate-500">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" checked />
+                Include environment metadata
+              </label>
+              <span>Screenshot included automatically when available.</span>
+            </div>
+            <button
+              type="submit"
+              data-testid="submit-feedback"
+              class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-elevation-1 transition hover:bg-primary-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+            >Submit feedback</button>
+          </form>
+          <p data-testid="form-status" aria-live="polite" class="text-sm text-slate-600"></p>
+        </article>
+      </section>
+
+      <section class="grid gap-6 md:grid-cols-2">
+        <article class="card space-y-4" aria-labelledby="ui-showcase-title">
+          <h2 id="ui-showcase-title" class="text-lg font-semibold">UI elements under test</h2>
+          <div class="space-y-3">
+            <label class="block space-y-1 text-sm text-slate-600">
+              Native select
+              <select class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-200">
+                <option>Screenshot fidelity</option>
+                <option>Accessibility review</option>
+                <option>Performance profiling</option>
+                <option>Visual regression</option>
+              </select>
+            </label>
+
+            <div class="space-y-1 text-sm text-slate-600">
+              <span class="block">Styled select</span>
+              <div class="relative">
+                <button
+                  type="button"
+                  data-testid="custom-select-trigger"
+                  class="flex w-full items-center justify-between rounded-lg border border-slate-300 px-4 py-2 text-left text-sm shadow-sm transition hover:border-primary-500 focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-200"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                >
+                  <span data-testid="custom-select-label">Choose state focus</span>
+                  <span aria-hidden="true">▾</span>
+                </button>
+                <div
+                  data-testid="custom-select-options"
+                  role="listbox"
+                  class="absolute left-0 right-0 z-10 mt-2 hidden rounded-lg border border-slate-200 bg-white shadow-elevation-2"
+                >
+                  <button type="button" role="option" class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-primary-50" data-value="Hover states">
+                    <span class="h-2 w-2 rounded-full bg-primary-500"></span>
+                    Hover states
+                  </button>
+                  <button type="button" role="option" class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-primary-50" data-value="Modal focus">
+                    <span class="h-2 w-2 rounded-full bg-secondary-500"></span>
+                    Modal focus
+                  </button>
+                  <button type="button" role="option" class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-primary-50" data-value="Form validation">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                    Form validation
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <details class="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+              <summary class="cursor-pointer list-none text-sm font-medium text-slate-700">Accordion panel</summary>
+              <p class="mt-3 text-sm text-slate-600">
+                Use this panel to confirm the capture preserves expanded/collapsed states across interactions.
+              </p>
+            </details>
+          </div>
+          <img
+            src="https://picsum.photos/seed/screenshot-demo/480/260"
+            alt="Sample dashboard card for screenshot testing"
+            class="w-full rounded-xl object-cover"
+          />
+        </article>
+
+        <article class="card space-y-5" aria-labelledby="interactive-title">
+          <div class="flex items-center justify-between">
+            <h2 id="interactive-title" class="text-lg font-semibold">Interactive states</h2>
+            <button
+              type="button"
+              data-testid="open-modal"
+              class="rounded-lg bg-secondary-600 px-4 py-2 text-sm font-medium text-white shadow-elevation-1 transition hover:bg-secondary-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-secondary-200"
+            >Open analytics modal</button>
+          </div>
+          <div class="space-y-4">
+            <div class="relative rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 class="text-sm font-medium text-slate-700">Hover card</h3>
+              <p class="mt-2 text-sm text-slate-600">
+                Hover over the button to reveal tooltip-only context. Captures should reflect its visibility.
+              </p>
+              <div class="mt-4">
+                <button
+                  type="button"
+                  data-testid="hover-target"
+                  class="group relative inline-flex items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-medium text-primary-700 transition hover:border-primary-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+                >
+                  Hover to preview tooltip
+                  <span
+                    data-testid="hover-tooltip"
+                    role="status"
+                    class="pointer-events-none absolute left-1/2 top-full z-10 mt-2 hidden w-64 -translate-x-1/2 rounded-lg bg-slate-900 px-4 py-2 text-sm text-white shadow-elevation-2"
+                  >
+                    Tooltip: Use captures to show reviewers your exact hover state.
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 class="text-sm font-medium text-slate-700">Responsive layout stretch</h3>
+              <p class="mt-2 text-sm text-slate-600">
+                Resize the window or scroll to validate the floating button stays anchored bottom-right.
+              </p>
+              <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <div class="rounded-lg bg-primary-50 p-4 text-sm text-primary-700">Peek 1 – Filter chips</div>
+                <div class="rounded-lg bg-secondary-50 p-4 text-sm text-secondary-700">Peek 2 – Modal entry</div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <button
+    type="button"
+    class="fab z-30"
+    data-testid="fab-capture"
+    aria-haspopup="dialog"
+    aria-controls="capture-menu"
+  >
+    <span aria-hidden="true">📸</span>
+    Capture screenshot
+  </button>
+
+  <div
+    id="capture-menu"
+    data-testid="capture-menu"
+    class="fixed inset-0 z-40 hidden items-end justify-center bg-slate-900/40 backdrop-blur-sm px-4 pb-8 md:items-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="capture-menu-title"
+  >
+    <div class="modal-panel md:max-w-md">
+      <header class="flex items-start justify-between gap-4">
+        <div class="space-y-1">
+          <h2 id="capture-menu-title" class="text-xl font-semibold text-slate-900">Choose capture mode</h2>
+          <p class="text-sm text-slate-600">Select entire page or draw a custom region.</p>
+        </div>
+        <button
+          type="button"
+          class="text-slate-500 transition hover:text-slate-700"
+          data-action="close-capture-menu"
+          aria-label="Close capture menu"
+        >✕</button>
+      </header>
+      <div class="mt-6 space-y-3">
+        <button
+          type="button"
+          class="flex w-full flex-col rounded-lg border border-slate-200 px-4 py-3 text-left transition hover:border-primary-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+          data-testid="mode-full-page"
+        >
+          <span class="text-sm font-medium text-slate-900">Full page capture</span>
+          <span class="text-xs text-slate-600">Grab everything currently on screen.</span>
+        </button>
+        <button
+          type="button"
+          class="flex w-full flex-col rounded-lg border border-slate-200 px-4 py-3 text-left transition hover:border-primary-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+          data-testid="mode-region"
+        >
+          <span class="text-sm font-medium text-slate-900">Select region</span>
+          <span class="text-xs text-slate-600">Draw a rectangle around the area you need.</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    data-testid="region-overlay"
+    class="fixed inset-0 z-50 hidden cursor-crosshair bg-slate-900/40 backdrop-blur-sm"
+    tabindex="0"
+    aria-label="Region selection overlay"
+  >
+    <div
+      data-testid="region-selection"
+      class="pointer-events-none absolute border-2 border-primary-400 bg-primary-200/30 shadow-elevation-1"
+    ></div>
+    <div class="pointer-events-none absolute left-1/2 top-8 -translate-x-1/2 rounded-full bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-elevation-2">
+      Drag to capture a custom area — press Esc to cancel
+    </div>
+  </div>
+
+  <div data-testid="demo-modal" class="modal-backdrop hidden z-50 p-4" aria-hidden="true">
+    <div class="modal-panel space-y-4" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title">
+      <header class="flex items-start justify-between gap-3">
+        <div class="space-y-1">
+          <h2 id="demo-modal-title" class="text-xl font-semibold">Fullscreen analytics modal</h2>
+          <p class="text-sm text-slate-600">Focus stays inside until dismissed to match accessibility expectations.</p>
+        </div>
+        <button
+          type="button"
+          class="text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+          data-testid="close-modal"
+          aria-label="Close analytics modal"
+        >✕</button>
+      </header>
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="rounded-xl bg-primary-50 p-5 text-primary-900 shadow-sm">
+          <h3 class="text-sm font-medium uppercase tracking-wide text-primary-700">Highlights</h3>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li>• Attach annotated screenshots to accelerate triage.</li>
+            <li>• Validate hover + modal states before release.</li>
+            <li>• Confirm Chrome-only demo experience.</li>
+          </ul>
+        </div>
+        <div class="rounded-xl bg-secondary-50 p-5 text-secondary-900 shadow-sm">
+          <h3 class="text-sm font-medium uppercase tracking-wide text-secondary-700">Checklist</h3>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li>• Ensure console payload includes `environment` metadata.</li>
+            <li>• Record performance metrics in Chrome DevTools.</li>
+            <li>• Verify accessibility focus traps and escape routes.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3">
+        <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 transition hover:border-primary-500 hover:text-primary-600" data-testid="close-modal-secondary">Not now</button>
+        <button type="button" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-elevation-1 transition hover:bg-primary-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">View tour</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      // Utility to trap focus inside a container while it is open.
+      const trapFocus = (container) => {
+        const focusable = Array.from(
+          container.querySelectorAll(
+            'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+          )
+        );
+        if (!focusable.length) {
+          return () => {};
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const handleKeydown = (event) => {
+          if (event.key !== 'Tab') return;
+          if (event.shiftKey) {
+            if (document.activeElement === first) {
+              event.preventDefault();
+              last.focus();
+            }
+          } else if (document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        };
+        container.addEventListener('keydown', handleKeydown);
+        return () => container.removeEventListener('keydown', handleKeydown);
+      };
+
+      const captureButton = document.querySelector('[data-testid="fab-capture"]');
+      const captureMenu = document.getElementById('capture-menu');
+      const captureMenuCloseButtons = captureMenu.querySelectorAll('[data-action="close-capture-menu"]');
+      const modeFullPage = document.querySelector('[data-testid="mode-full-page"]');
+      const modeRegion = document.querySelector('[data-testid="mode-region"]');
+      const overlay = document.querySelector('[data-testid="region-overlay"]');
+      const selectionBox = overlay.querySelector('[data-testid="region-selection"]');
+      const previewImage = document.querySelector('[data-testid="screenshot-image"]');
+      const previewPlaceholder = document.querySelector('[data-testid="screenshot-placeholder"]');
+      const metadata = document.querySelector('[data-testid="screenshot-metadata"]');
+      const attachmentBadge = document.querySelector('[data-testid="attachment-count"]');
+      const errorBanner = document.querySelector('[data-testid="capture-error"]');
+      const removeButton = document.querySelector('[data-testid="remove-screenshot"]');
+      const downloadButton = document.querySelector('[data-testid="download-screenshot"]');
+      const feedbackForm = document.querySelector('[data-testid="feedback-form"]');
+      const formStatus = document.querySelector('[data-testid="form-status"]');
+      const openModalButton = document.querySelector('[data-testid="open-modal"]');
+      const modalBackdrop = document.querySelector('[data-testid="demo-modal"]');
+      const closeModalButton = document.querySelector('[data-testid="close-modal"]');
+      const closeModalSecondary = document.querySelector('[data-testid="close-modal-secondary"]');
+  const hoverTarget = document.querySelector('[data-testid="hover-target"]');
+  const hoverTooltip = document.querySelector('[data-testid="hover-tooltip"]');
+  hoverTooltip.dataset.active = 'false';
+      const customSelectTrigger = document.querySelector('[data-testid="custom-select-trigger"]');
+      const customSelectOptions = document.querySelector('[data-testid="custom-select-options"]');
+      const customSelectLabel = document.querySelector('[data-testid="custom-select-label"]');
+
+      // Persistent UI state for the current session.
+      const state = {
+        screenshot: null
+      };
+
+  let releaseCaptureTrap = () => {};
+  let releaseModalTrap = () => {};
+  let regionStart = null;
+  let hoverDismissTimeout = null;
+
+      const updateAttachmentBadge = () => {
+        attachmentBadge.textContent = state.screenshot ? '1 attachment' : '0 attachments';
+      };
+
+      const refreshMetadata = () => {
+        if (!state.screenshot) return;
+        metadata.textContent = `Mode: ${state.screenshot.mode} · Size: ${state.screenshot.dimensions.width}x${state.screenshot.dimensions.height}px · States: ${
+          getActiveStates().join(', ') || 'none'
+        }`;
+      };
+
+      const getActiveStates = () => {
+        const states = [];
+        if (modalBackdrop.getAttribute('aria-hidden') === 'false') {
+          states.push('modal');
+        }
+        if (hoverTooltip.dataset.active === 'true' || !hoverTooltip.classList.contains('hidden')) {
+          states.push('hover');
+        }
+        return states;
+      };
+
+      const hideError = () => {
+        errorBanner.textContent = '';
+        errorBanner.classList.add('hidden');
+      };
+
+      const showError = (message) => {
+        errorBanner.textContent = message;
+        errorBanner.classList.remove('hidden');
+      };
+
+      const resetPreview = () => {
+        state.screenshot = null;
+        previewImage.src = '';
+        previewImage.classList.add('hidden');
+        previewPlaceholder.classList.remove('hidden');
+        metadata.textContent = 'Mode: — · Size: — · States: none';
+        removeButton.disabled = true;
+        downloadButton.disabled = true;
+        updateAttachmentBadge();
+      };
+
+      const applyScreenshot = (result) => {
+        state.screenshot = result;
+        previewImage.src = result.previewDataUrl;
+        previewImage.classList.remove('hidden');
+        previewPlaceholder.classList.add('hidden');
+        refreshMetadata();
+        removeButton.disabled = false;
+        downloadButton.disabled = false;
+        updateAttachmentBadge();
+      };
+
+      const openCaptureMenu = () => {
+        hideError();
+        captureMenu.classList.remove('hidden');
+        captureMenu.classList.add('flex');
+        captureMenu.setAttribute('aria-hidden', 'false');
+        captureButton.setAttribute('aria-expanded', 'true');
+        releaseCaptureTrap = trapFocus(captureMenu);
+        modeFullPage.focus();
+      };
+
+      const closeCaptureMenu = () => {
+        captureMenu.classList.add('hidden');
+        captureMenu.classList.remove('flex');
+        captureMenu.setAttribute('aria-hidden', 'true');
+        captureButton.setAttribute('aria-expanded', 'false');
+        releaseCaptureTrap();
+        captureButton.focus();
+      };
+
+      const cancelRegionSelection = () => {
+        regionStart = null;
+        overlay.classList.add('hidden');
+        selectionBox.style.width = '0px';
+        selectionBox.style.height = '0px';
+        document.body.classList.remove('overflow-hidden');
+      };
+
+      const startRegionSelection = () => {
+        hideError();
+        regionStart = null;
+        selectionBox.style.width = '0px';
+        selectionBox.style.height = '0px';
+        overlay.classList.remove('hidden');
+        overlay.focus();
+        document.body.classList.add('overflow-hidden');
+      };
+
+      // Requests a capture and updates the preview metadata once complete.
+      const performCapture = async (mode, regionRect) => {
+        try {
+          hideError();
+          captureButton.disabled = true;
+          captureButton.setAttribute('aria-busy', 'true');
+          const result = await captureScreen(mode, regionRect);
+          applyScreenshot(result);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unable to capture screenshot.';
+          showError(message);
+        } finally {
+          captureButton.disabled = false;
+          captureButton.removeAttribute('aria-busy');
+        }
+      };
+
+      // Core capture routine using mediaDevices.getDisplayMedia.
+      const captureScreen = async (mode, regionRect) => {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'browser' } });
+        const [track] = stream.getVideoTracks();
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.muted = true;
+        video.playsInline = true;
+
+        await new Promise((resolve) => {
+          const done = () => resolve();
+          video.addEventListener('loadedmetadata', () => {
+            video.play().then(done).catch(done);
+          });
+        });
+
+        const width = video.videoWidth || window.innerWidth;
+        const height = video.videoHeight || window.innerHeight;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
+        if (!context) {
+          track.stop();
+          throw new Error('Unable to access 2D canvas context.');
+        }
+        context.drawImage(video, 0, 0, width, height);
+
+        track.stop();
+        video.srcObject = null;
+
+        let outputCanvas = canvas;
+        if (mode === 'region' && regionRect) {
+          const scaleX = canvas.width / window.innerWidth;
+          const scaleY = canvas.height / window.innerHeight;
+          const cropWidth = Math.max(1, Math.round(regionRect.width * scaleX));
+          const cropHeight = Math.max(1, Math.round(regionRect.height * scaleY));
+          const offsetX = Math.max(0, Math.round(regionRect.x * scaleX));
+          const offsetY = Math.max(0, Math.round(regionRect.y * scaleY));
+          const cropCanvas = document.createElement('canvas');
+          cropCanvas.width = cropWidth;
+          cropCanvas.height = cropHeight;
+          const cropContext = cropCanvas.getContext('2d');
+          if (!cropContext) {
+            throw new Error('Unable to crop captured frame.');
+          }
+          cropContext.drawImage(canvas, offsetX, offsetY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+          outputCanvas = cropCanvas;
+        }
+
+        const dataUrl = outputCanvas.toDataURL('image/png', 0.92);
+        const blob = await fetch(dataUrl).then((response) => response.blob());
+
+        return {
+          mode,
+          previewDataUrl: dataUrl,
+          sizeBytes: blob.size,
+          dimensions: { width: outputCanvas.width, height: outputCanvas.height },
+          capturedAt: new Date().toISOString()
+        };
+      };
+
+      // Capture menu wiring
+      captureButton.addEventListener('click', openCaptureMenu);
+      document.addEventListener('keydown', (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 's') {
+          event.preventDefault();
+          if (captureMenu.classList.contains('hidden')) {
+            openCaptureMenu();
+          }
+        }
+      });
+      captureMenu.addEventListener('click', (event) => {
+        if (event.target === captureMenu) {
+          closeCaptureMenu();
+        }
+      });
+      captureMenuCloseButtons.forEach((button) => button.addEventListener('click', closeCaptureMenu));
+      modeFullPage.addEventListener('click', async () => {
+        closeCaptureMenu();
+        await performCapture('full-page');
+      });
+      modeRegion.addEventListener('click', () => {
+        closeCaptureMenu();
+        startRegionSelection();
+      });
+
+      // Region selection logic
+      // Begin drawing the region selection when the user presses down.
+      overlay.addEventListener('pointerdown', (event) => {
+        regionStart = { x: event.clientX, y: event.clientY };
+        selectionBox.style.left = `${regionStart.x}px`;
+        selectionBox.style.top = `${regionStart.y}px`;
+        selectionBox.style.width = '0px';
+        selectionBox.style.height = '0px';
+        overlay.setPointerCapture(event.pointerId);
+      });
+
+      // Resize the selection rectangle as the pointer moves.
+      overlay.addEventListener('pointermove', (event) => {
+        if (!regionStart) return;
+        const currentX = event.clientX;
+        const currentY = event.clientY;
+        const left = Math.min(regionStart.x, currentX);
+        const top = Math.min(regionStart.y, currentY);
+        const width = Math.abs(currentX - regionStart.x);
+        const height = Math.abs(currentY - regionStart.y);
+        selectionBox.style.left = `${left}px`;
+        selectionBox.style.top = `${top}px`;
+        selectionBox.style.width = `${width}px`;
+        selectionBox.style.height = `${height}px`;
+      });
+
+      const finishRegionSelection = async (event) => {
+        if (!regionStart) return;
+        overlay.releasePointerCapture(event.pointerId);
+        const rect = selectionBox.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        cancelRegionSelection();
+        if (width < 10 || height < 10) {
+          showError('Selection too small — drag a larger area to capture.');
+          return;
+        }
+        await performCapture('region', rect);
+      };
+
+      overlay.addEventListener('pointerup', finishRegionSelection);
+      overlay.addEventListener('pointercancel', cancelRegionSelection);
+      overlay.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          cancelRegionSelection();
+        }
+      });
+
+      // Preview controls
+      removeButton.addEventListener('click', resetPreview);
+      downloadButton.addEventListener('click', () => {
+        if (!state.screenshot) return;
+        const anchor = document.createElement('a');
+        anchor.href = state.screenshot.previewDataUrl;
+        anchor.download = `screenshot-${state.screenshot.mode}-${Date.now()}.png`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+      });
+
+      // Hover tooltip visibility tracking keeps metadata in sync.
+      const setHoverState = (active) => {
+        if (hoverDismissTimeout !== null) {
+          clearTimeout(hoverDismissTimeout);
+          hoverDismissTimeout = null;
+        }
+
+        if (active) {
+          hoverTooltip.dataset.active = 'true';
+          hoverTooltip.classList.remove('hidden');
+          refreshMetadata();
+          return;
+        }
+
+        hoverDismissTimeout = window.setTimeout(() => {
+          hoverTooltip.dataset.active = 'false';
+          hoverTooltip.classList.add('hidden');
+          hoverDismissTimeout = null;
+          refreshMetadata();
+        }, 500);
+
+        refreshMetadata();
+      };
+      hoverTarget.addEventListener('mouseenter', () => setHoverState(true));
+      hoverTarget.addEventListener('focus', () => setHoverState(true));
+      hoverTarget.addEventListener('mouseleave', () => setHoverState(false));
+      hoverTarget.addEventListener('blur', () => setHoverState(false));
+
+      // Modal behaviour with focus management and escape handling.
+      const openModal = () => {
+        modalBackdrop.classList.remove('hidden');
+        modalBackdrop.setAttribute('aria-hidden', 'false');
+        releaseModalTrap = trapFocus(modalBackdrop);
+        closeModalButton.focus();
+      };
+
+      const closeModal = () => {
+        modalBackdrop.classList.add('hidden');
+        modalBackdrop.setAttribute('aria-hidden', 'true');
+        releaseModalTrap();
+        openModalButton.focus();
+        refreshMetadata();
+      };
+
+      openModalButton.addEventListener('click', openModal);
+      closeModalButton.addEventListener('click', closeModal);
+      closeModalSecondary.addEventListener('click', closeModal);
+      modalBackdrop.addEventListener('click', (event) => {
+        if (event.target === modalBackdrop) {
+          closeModal();
+        }
+      });
+      modalBackdrop.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeModal();
+        }
+      });
+
+      // Custom select keeps styling lightweight without external libraries.
+      const toggleCustomSelect = (expanded) => {
+        customSelectOptions.classList.toggle('hidden', !expanded);
+        customSelectTrigger.setAttribute('aria-expanded', String(expanded));
+      };
+      customSelectTrigger.addEventListener('click', () => {
+        const expanded = customSelectTrigger.getAttribute('aria-expanded') === 'true';
+        toggleCustomSelect(!expanded);
+      });
+      customSelectOptions.querySelectorAll('button').forEach((option) => {
+        option.addEventListener('click', () => {
+          customSelectLabel.textContent = option.dataset.value || 'Select focus';
+          toggleCustomSelect(false);
+          customSelectTrigger.focus();
+        });
+      });
+      document.addEventListener('click', (event) => {
+        if (!customSelectOptions.contains(event.target) && !customSelectTrigger.contains(event.target)) {
+          toggleCustomSelect(false);
+        }
+      });
+
+      // Feedback submission logging
+      feedbackForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        hideError();
+        const formData = new FormData(feedbackForm);
+        const name = formData.get('name')?.toString().trim();
+        const email = formData.get('email')?.toString().trim();
+        const message = formData.get('message')?.toString().trim();
+
+        if (!name || !email || !message) {
+          showError('Please complete every field before submitting feedback.');
+          return;
+        }
+
+        const payload = {
+          name,
+          email,
+          message,
+          submittedAt: new Date().toISOString(),
+          screenshot: state.screenshot,
+          environment: {
+            userAgent: navigator.userAgent,
+            locale: navigator.language,
+            viewport: {
+              width: window.innerWidth,
+              height: window.innerHeight
+            }
+          }
+        };
+
+        // Surface payloads to automated tests without leaking into production builds.
+        window.testCaptureSubmission?.(payload);
+        console.log(payload);
+        formStatus.textContent = 'Feedback logged to console with current screenshot metadata.';
+        feedbackForm.reset();
+      });
+
+      // Initialise default state
+      resetPreview();
+    })();
+  </script>
+</body>
+</html>
